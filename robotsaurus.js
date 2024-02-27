@@ -40,6 +40,8 @@ function onMessageHandler(channel, tags, message, self) {
 // Called every time the bot connects to Twitch chat
 function onConnectedHandler(addr, port) {
   console.log(`* Connected to ${addr}:${port}`);
+
+  commands.readGame();
 };
 
 function commandTimer (command) {
@@ -56,35 +58,41 @@ function commandTimer (command) {
 };
 
 function executeCommands (channel, tags, command) {
-  const modLevel = modFunction(tags);
   const user = tags.username;
 
   switch(command[0].toLowerCase()) {
     case "hi":
     case "hello":
-    case "hey": 
-      client.say(channel, `@${ user }, hello! Welcome to the dino herd! KonCha`);
+    case "hey":
+      botResponse(`@${ user }, ${ commands.introduction() }`)
       break;
 
     case "!dice":
-      client.say(channel, `@${ user }, ${ commands.dice(command[1]) }`);
+      botResponse(`@${ user }, ${ commands.dice(command[1]) }`)
       break;
     
     case "!bonk":
     case "!death":
     case "!count":
-      if (!modFunction(tags)) return;
-      client.say(channel, `@${ user }, the count is now ${ commands.counter(command[1]) }`);
+      botResponse(`@${ user }, ${ commands.counter(tags, command[1])}`)
+      break;
+    case "!wr":
+      commands.getWR((response) => {
+        botResponse(`@${ user }, ${ response }`)
+      });
+      break;
+    case "!category":
+      commands.changeCategory(tags, command.splice(1).join(" "), (response) => {
+        botResponse(`@${ user }, ${ response }`)
+      });
+      break;
+
+    case "!changeGame":
+      commands.readGame();
       break;
   };
 };
 
-function modFunction(tags) {
-  const isAdmin = tags.username === process.env.TWITCH_CHANNEL;
-  const isMod = tags.mod;
-
-  if (isAdmin) return "admin"
-  if (isMod) return "mod";
-
-  return false;
+function botResponse(response) {
+  client.say(process.env.TWITCH_CHANNEL, response)
 };
